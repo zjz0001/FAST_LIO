@@ -134,6 +134,7 @@ nav_msgs::Path path;
 nav_msgs::Odometry odomAftMapped;
 geometry_msgs::Quaternion geoQuat;
 geometry_msgs::PoseStamped msg_body_pose;
+geometry_msgs::PoseStamped bodyPose;
 
 shared_ptr<Preprocess> p_pre(new Preprocess());
 shared_ptr<ImuProcess> p_imu(new ImuProcess());
@@ -628,6 +629,16 @@ void publish_path(const ros::Publisher pubPath)
     }
 }
 
+void publish_pose(const ros::Publisher pubPose)
+{
+    set_posestamp(bodyPose);
+    bodyPose.header.stamp = ros::Time().fromSec(lidar_end_time);
+    bodyPose.header.frame_id = "camera_init";
+
+    pubPose.publish(bodyPose);
+
+}
+
 void h_share_model(state_ikfom &s, esekfom::dyn_share_datastruct<double> &ekfom_data)
 {
     double match_start = omp_get_wtime();
@@ -848,6 +859,8 @@ int main(int argc, char** argv)
             ("/Odometry", 100000);
     ros::Publisher pubPath          = nh.advertise<nav_msgs::Path> 
             ("/path", 100000);
+    ros::Publisher pubPose         = nh.advertise<geometry_msgs::PoseStamped >
+            ("/lidar_pose",100000);
 //------------------------------------------------------------------------------------------------------
     signal(SIGINT, SigHandle);
     ros::Rate rate(5000);
@@ -960,6 +973,9 @@ int main(int argc, char** argv)
 
             /******* Publish odometry *******/
             publish_odometry(pubOdomAftMapped);
+
+            /******* Publish Pose ************/
+            publish_pose(pubPose);
 
             /*** add the feature points to map kdtree ***/
             t3 = omp_get_wtime();
